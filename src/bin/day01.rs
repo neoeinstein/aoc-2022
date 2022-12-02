@@ -1,6 +1,7 @@
+use std::{io, iter};
+
 use color_eyre::Result;
 use itertools::Itertools;
-use std::{io, iter};
 
 fn main() -> Result<()> {
     let max = io::stdin()
