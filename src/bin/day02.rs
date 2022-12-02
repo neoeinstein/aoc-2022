@@ -45,51 +45,27 @@ fn esp_round(s: &str) -> nom::IResult<&str, EspRound> {
 }
 
 fn opp_throw(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    alt((opp_rock, opp_paper, opp_scissors))(s)
-}
-
-fn opp_rock(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    value(OpponentThrow::Rock, tag("A"))(s)
-}
-
-fn opp_paper(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    value(OpponentThrow::Paper, tag("B"))(s)
-}
-
-fn opp_scissors(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    value(OpponentThrow::Scissors, tag("C"))(s)
+    alt((
+        value(OpponentThrow::Rock, tag("A")),
+        value(OpponentThrow::Paper, tag("B")),
+        value(OpponentThrow::Scissors, tag("C")),
+    ))(s)
 }
 
 fn us_throw(s: &str) -> nom::IResult<&str, OurThrow> {
-    alt((us_rock, us_paper, us_scissors))(s)
-}
-
-fn us_rock(s: &str) -> nom::IResult<&str, OurThrow> {
-    value(OurThrow::Rock, tag("X"))(s)
-}
-
-fn us_paper(s: &str) -> nom::IResult<&str, OurThrow> {
-    value(OurThrow::Paper, tag("Y"))(s)
-}
-
-fn us_scissors(s: &str) -> nom::IResult<&str, OurThrow> {
-    value(OurThrow::Scissors, tag("Z"))(s)
+    alt((
+        value(OurThrow::Rock, tag("X")),
+        value(OurThrow::Paper, tag("Y")),
+        value(OurThrow::Scissors, tag("Z")),
+    ))(s)
 }
 
 fn expected_result(s: &str) -> nom::IResult<&str, RoundResult> {
-    alt((expect_win, expect_draw, expect_loss))(s)
-}
-
-fn expect_loss(s: &str) -> nom::IResult<&str, RoundResult> {
-    value(RoundResult::Loss, tag("X"))(s)
-}
-
-fn expect_draw(s: &str) -> nom::IResult<&str, RoundResult> {
-    value(RoundResult::Draw, tag("Y"))(s)
-}
-
-fn expect_win(s: &str) -> nom::IResult<&str, RoundResult> {
-    value(RoundResult::Win, tag("Z"))(s)
+    alt((
+        value(RoundResult::Loss, tag("X")),
+        value(RoundResult::Draw, tag("Y")),
+        value(RoundResult::Win, tag("Z")),
+    ))(s)
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
