@@ -15,14 +15,8 @@ fn main() -> color_eyre::Result<()> {
         .lines()
         .map(|line| -> color_eyre::Result<_> {
             let line = line?;
-            let (_, p1) = round(&line).finish().map_err(|e| nom::error::Error {
-                input: e.input.to_owned(),
-                code: e.code,
-            })?;
-            let (_, p2) = esp_round(&line).finish().map_err(|e| nom::error::Error {
-                input: e.input.to_owned(),
-                code: e.code,
-            })?;
+            let (_, p1) = round(&line).map_err(|e| e.to_owned()).finish()?;
+            let (_, p2) = esp_round(&line).map_err(|e| e.to_owned()).finish()?;
             Ok((p1.score(), p2.score()))
         })
         .try_fold((0, 0), |(acc_p1, acc_p2), next| -> color_eyre::Result<_> {
