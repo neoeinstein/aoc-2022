@@ -3,7 +3,7 @@ use std::io;
 use ahash::{HashMap, HashMapExt};
 use nom::Finish;
 use nom::bytes::complete::tag;
-use nom::combinator::map;
+use nom::combinator::{map, value};
 use nom::branch::alt;
 use nom::sequence::separated_pair;
 use once_cell::sync::Lazy;
@@ -39,15 +39,15 @@ fn opp_throw(s: &str) -> nom::IResult<&str, OpponentThrow> {
 }
 
 fn opp_rock(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    map(tag("A"), |_| OpponentThrow::Rock)(s)
+    value(OpponentThrow::Rock, tag("A"))(s)
 }
 
 fn opp_paper(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    map(tag("B"), |_| OpponentThrow::Paper)(s)
+    value(OpponentThrow::Paper, tag("B"))(s)
 }
 
 fn opp_scissors(s: &str) -> nom::IResult<&str, OpponentThrow> {
-    map(tag("C"), |_| OpponentThrow::Scissors)(s)
+    value(OpponentThrow::Scissors, tag("C"))(s)
 }
 
 fn us_throw(s: &str) -> nom::IResult<&str, OurThrow> {
@@ -55,15 +55,15 @@ fn us_throw(s: &str) -> nom::IResult<&str, OurThrow> {
 }
 
 fn us_rock(s: &str) -> nom::IResult<&str, OurThrow> {
-    map(tag("X"), |_| OurThrow::Rock)(s)
+    value(OurThrow::Rock, tag("X"))(s)
 }
 
 fn us_paper(s: &str) -> nom::IResult<&str, OurThrow> {
-    map(tag("Y"), |_| OurThrow::Paper)(s)
+    value(OurThrow::Paper, tag("Y"))(s)
 }
 
 fn us_scissors(s: &str) -> nom::IResult<&str, OurThrow> {
-    map(tag("Z"), |_| OurThrow::Scissors)(s)
+    value(OurThrow::Scissors, tag("Z"))(s)
 }
 
 fn expected_result(s: &str) -> nom::IResult<&str, RoundResult> {
@@ -71,15 +71,15 @@ fn expected_result(s: &str) -> nom::IResult<&str, RoundResult> {
 }
 
 fn expect_loss(s: &str) -> nom::IResult<&str, RoundResult> {
-    map(tag("X"), |_| RoundResult::Loss)(s)
+    value(RoundResult::Loss, tag("X"))(s)
 }
 
 fn expect_draw(s: &str) -> nom::IResult<&str, RoundResult> {
-    map(tag("Y"), |_| RoundResult::Draw)(s)
+    value(RoundResult::Draw, tag("Y"))(s)
 }
 
 fn expect_win(s: &str) -> nom::IResult<&str, RoundResult> {
-    map(tag("Z"), |_| RoundResult::Win)(s)
+    value(RoundResult::Win, tag("Z"))(s)
 }
 
 static ROUND_TABLE: Lazy<HashMap<Round, RoundResult>> = Lazy::new(generate_round_table);
