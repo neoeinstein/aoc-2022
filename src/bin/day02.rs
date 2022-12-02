@@ -1,6 +1,5 @@
 use std::io;
 
-use ahash::{HashMap, HashMapExt};
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -8,7 +7,6 @@ use nom::{
     sequence::separated_pair,
     Finish,
 };
-use once_cell::sync::Lazy;
 
 fn main() -> color_eyre::Result<()> {
     let (part1_score, part2_score): (u32, u32) = io::stdin()
@@ -94,146 +92,6 @@ fn expect_win(s: &str) -> nom::IResult<&str, RoundResult> {
     value(RoundResult::Win, tag("Z"))(s)
 }
 
-static ROUND_TABLE: Lazy<HashMap<Round, RoundResult>> = Lazy::new(generate_round_table);
-
-fn generate_round_table() -> HashMap<Round, RoundResult> {
-    let mut rounds = HashMap::with_capacity(9);
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Rock,
-            us: OurThrow::Rock,
-        },
-        RoundResult::Draw,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Rock,
-            us: OurThrow::Paper,
-        },
-        RoundResult::Win,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Rock,
-            us: OurThrow::Scissors,
-        },
-        RoundResult::Loss,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Paper,
-            us: OurThrow::Rock,
-        },
-        RoundResult::Loss,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Paper,
-            us: OurThrow::Paper,
-        },
-        RoundResult::Draw,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Paper,
-            us: OurThrow::Scissors,
-        },
-        RoundResult::Win,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Scissors,
-            us: OurThrow::Rock,
-        },
-        RoundResult::Win,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Scissors,
-            us: OurThrow::Paper,
-        },
-        RoundResult::Loss,
-    );
-    rounds.insert(
-        Round {
-            opponent: OpponentThrow::Scissors,
-            us: OurThrow::Scissors,
-        },
-        RoundResult::Draw,
-    );
-    rounds
-}
-
-static ESP_ROUND_TABLE: Lazy<HashMap<EspRound, OurThrow>> = Lazy::new(generate_esp_round_table);
-
-fn generate_esp_round_table() -> HashMap<EspRound, OurThrow> {
-    let mut rounds = HashMap::with_capacity(9);
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Rock,
-            expected_result: RoundResult::Win,
-        },
-        OurThrow::Paper,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Rock,
-            expected_result: RoundResult::Draw,
-        },
-        OurThrow::Rock,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Rock,
-            expected_result: RoundResult::Loss,
-        },
-        OurThrow::Scissors,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Paper,
-            expected_result: RoundResult::Win,
-        },
-        OurThrow::Scissors,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Paper,
-            expected_result: RoundResult::Draw,
-        },
-        OurThrow::Paper,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Paper,
-            expected_result: RoundResult::Loss,
-        },
-        OurThrow::Rock,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Scissors,
-            expected_result: RoundResult::Win,
-        },
-        OurThrow::Rock,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Scissors,
-            expected_result: RoundResult::Draw,
-        },
-        OurThrow::Scissors,
-    );
-    rounds.insert(
-        EspRound {
-            opponent: OpponentThrow::Scissors,
-            expected_result: RoundResult::Loss,
-        },
-        OurThrow::Paper,
-    );
-    rounds
-}
-
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct EspRound {
     opponent: OpponentThrow,
@@ -241,8 +99,22 @@ struct EspRound {
 }
 
 impl EspRound {
+    fn best_move(&self) -> OurThrow {
+        match (self.opponent, self.expected_result) {
+            (OpponentThrow::Rock, RoundResult::Win) => OurThrow::Paper,
+            (OpponentThrow::Rock, RoundResult::Draw) => OurThrow::Rock,
+            (OpponentThrow::Rock, RoundResult::Loss) => OurThrow::Scissors,
+            (OpponentThrow::Paper, RoundResult::Win) => OurThrow::Scissors,
+            (OpponentThrow::Paper, RoundResult::Draw) => OurThrow::Paper,
+            (OpponentThrow::Paper, RoundResult::Loss) => OurThrow::Rock,
+            (OpponentThrow::Scissors, RoundResult::Win) => OurThrow::Rock,
+            (OpponentThrow::Scissors, RoundResult::Draw) => OurThrow::Scissors,
+            (OpponentThrow::Scissors, RoundResult::Loss) => OurThrow::Paper,
+        }
+    }
+
     fn score(&self) -> u32 {
-        let throw_score = ESP_ROUND_TABLE.get(self).expect("table is perfect").score();
+        let throw_score = self.best_move().score();
         let round_score = self.expected_result.score();
         round_score + throw_score
     }
@@ -255,8 +127,22 @@ struct Round {
 }
 
 impl Round {
+    fn result(&self) -> RoundResult {
+        match (self.opponent, self.us) {
+            (OpponentThrow::Rock, OurThrow::Paper) => RoundResult::Win,
+            (OpponentThrow::Rock, OurThrow::Rock) => RoundResult::Draw,
+            (OpponentThrow::Rock, OurThrow::Scissors) => RoundResult::Loss,
+            (OpponentThrow::Paper, OurThrow::Scissors) => RoundResult::Win,
+            (OpponentThrow::Paper, OurThrow::Paper) => RoundResult::Draw,
+            (OpponentThrow::Paper, OurThrow::Rock) => RoundResult::Loss,
+            (OpponentThrow::Scissors, OurThrow::Rock) => RoundResult::Win,
+            (OpponentThrow::Scissors, OurThrow::Scissors) => RoundResult::Draw,
+            (OpponentThrow::Scissors, OurThrow::Paper) => RoundResult::Loss,
+        }
+    }
+
     fn score(&self) -> u32 {
-        let round_score = ROUND_TABLE.get(self).expect("table is perfect").score();
+        let round_score = self.result().score();
         let throw_score = self.us.score();
         round_score + throw_score
     }
