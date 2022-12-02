@@ -35,36 +35,36 @@ fn esp_round(s: &str) -> nom::IResult<&str, EspRound> {
     map(separated_pair(opp_throw, tag(" "), expected_result), |(opponent, expected_result)| EspRound { opponent, expected_result })(s)
 }
 
-fn opp_throw(s: &str) -> nom::IResult<&str, Throw> {
+fn opp_throw(s: &str) -> nom::IResult<&str, OpponentThrow> {
     alt((opp_rock, opp_paper, opp_scissors))(s)
 }
 
-fn opp_rock(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("A"), |_| Throw::Rock)(s)
+fn opp_rock(s: &str) -> nom::IResult<&str, OpponentThrow> {
+    map(tag("A"), |_| OpponentThrow::Rock)(s)
 }
 
-fn opp_paper(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("B"), |_| Throw::Paper)(s)
+fn opp_paper(s: &str) -> nom::IResult<&str, OpponentThrow> {
+    map(tag("B"), |_| OpponentThrow::Paper)(s)
 }
 
-fn opp_scissors(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("C"), |_| Throw::Scissors)(s)
+fn opp_scissors(s: &str) -> nom::IResult<&str, OpponentThrow> {
+    map(tag("C"), |_| OpponentThrow::Scissors)(s)
 }
 
-fn us_throw(s: &str) -> nom::IResult<&str, Throw> {
+fn us_throw(s: &str) -> nom::IResult<&str, OurThrow> {
     alt((us_rock, us_paper, us_scissors))(s)
 }
 
-fn us_rock(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("X"), |_| Throw::Rock)(s)
+fn us_rock(s: &str) -> nom::IResult<&str, OurThrow> {
+    map(tag("X"), |_| OurThrow::Rock)(s)
 }
 
-fn us_paper(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("Y"), |_| Throw::Paper)(s)
+fn us_paper(s: &str) -> nom::IResult<&str, OurThrow> {
+    map(tag("Y"), |_| OurThrow::Paper)(s)
 }
 
-fn us_scissors(s: &str) -> nom::IResult<&str, Throw> {
-    map(tag("Z"), |_| Throw::Scissors)(s)
+fn us_scissors(s: &str) -> nom::IResult<&str, OurThrow> {
+    map(tag("Z"), |_| OurThrow::Scissors)(s)
 }
 
 fn expected_result(s: &str) -> nom::IResult<&str, RoundResult> {
@@ -87,37 +87,37 @@ static ROUND_TABLE: Lazy<HashMap<Round, RoundResult>> = Lazy::new(generate_round
 
 fn generate_round_table() -> HashMap<Round, RoundResult> {
     let mut rounds = HashMap::with_capacity(9);
-    rounds.insert(Round { opponent: Throw::Rock, us: Throw::Rock }, RoundResult::Draw);
-    rounds.insert(Round { opponent: Throw::Rock, us: Throw::Paper }, RoundResult::Win);
-    rounds.insert(Round { opponent: Throw::Rock, us: Throw::Scissors }, RoundResult::Loss);
-    rounds.insert(Round { opponent: Throw::Paper, us: Throw::Rock }, RoundResult::Loss);
-    rounds.insert(Round { opponent: Throw::Paper, us: Throw::Paper }, RoundResult::Draw);
-    rounds.insert(Round { opponent: Throw::Paper, us: Throw::Scissors }, RoundResult::Win);
-    rounds.insert(Round { opponent: Throw::Scissors, us: Throw::Rock }, RoundResult::Win);
-    rounds.insert(Round { opponent: Throw::Scissors, us: Throw::Paper }, RoundResult::Loss);
-    rounds.insert(Round { opponent: Throw::Scissors, us: Throw::Scissors }, RoundResult::Draw);
+    rounds.insert(Round { opponent: OpponentThrow::Rock, us: OurThrow::Rock }, RoundResult::Draw);
+    rounds.insert(Round { opponent: OpponentThrow::Rock, us: OurThrow::Paper }, RoundResult::Win);
+    rounds.insert(Round { opponent: OpponentThrow::Rock, us: OurThrow::Scissors }, RoundResult::Loss);
+    rounds.insert(Round { opponent: OpponentThrow::Paper, us: OurThrow::Rock }, RoundResult::Loss);
+    rounds.insert(Round { opponent: OpponentThrow::Paper, us: OurThrow::Paper }, RoundResult::Draw);
+    rounds.insert(Round { opponent: OpponentThrow::Paper, us: OurThrow::Scissors }, RoundResult::Win);
+    rounds.insert(Round { opponent: OpponentThrow::Scissors, us: OurThrow::Rock }, RoundResult::Win);
+    rounds.insert(Round { opponent: OpponentThrow::Scissors, us: OurThrow::Paper }, RoundResult::Loss);
+    rounds.insert(Round { opponent: OpponentThrow::Scissors, us: OurThrow::Scissors }, RoundResult::Draw);
     rounds
 }
 
-static ESP_ROUND_TABLE: Lazy<HashMap<EspRound, Throw>> = Lazy::new(generate_esp_round_table);
+static ESP_ROUND_TABLE: Lazy<HashMap<EspRound, OurThrow>> = Lazy::new(generate_esp_round_table);
 
-fn generate_esp_round_table() -> HashMap<EspRound, Throw> {
+fn generate_esp_round_table() -> HashMap<EspRound, OurThrow> {
     let mut rounds = HashMap::with_capacity(9);
-    rounds.insert(EspRound { opponent: Throw::Rock, expected_result: RoundResult::Win}, Throw::Paper);
-    rounds.insert(EspRound { opponent: Throw::Rock, expected_result: RoundResult::Draw}, Throw::Rock);
-    rounds.insert(EspRound { opponent: Throw::Rock, expected_result: RoundResult::Loss}, Throw::Scissors);
-    rounds.insert(EspRound { opponent: Throw::Paper, expected_result: RoundResult::Win}, Throw::Scissors);
-    rounds.insert(EspRound { opponent: Throw::Paper, expected_result: RoundResult::Draw}, Throw::Paper);
-    rounds.insert(EspRound { opponent: Throw::Paper, expected_result: RoundResult::Loss}, Throw::Rock);
-    rounds.insert(EspRound { opponent: Throw::Scissors, expected_result: RoundResult::Win}, Throw::Rock);
-    rounds.insert(EspRound { opponent: Throw::Scissors, expected_result: RoundResult::Draw}, Throw::Scissors);
-    rounds.insert(EspRound { opponent: Throw::Scissors, expected_result: RoundResult::Loss}, Throw::Paper);
+    rounds.insert(EspRound { opponent: OpponentThrow::Rock, expected_result: RoundResult::Win}, OurThrow::Paper);
+    rounds.insert(EspRound { opponent: OpponentThrow::Rock, expected_result: RoundResult::Draw}, OurThrow::Rock);
+    rounds.insert(EspRound { opponent: OpponentThrow::Rock, expected_result: RoundResult::Loss}, OurThrow::Scissors);
+    rounds.insert(EspRound { opponent: OpponentThrow::Paper, expected_result: RoundResult::Win}, OurThrow::Scissors);
+    rounds.insert(EspRound { opponent: OpponentThrow::Paper, expected_result: RoundResult::Draw}, OurThrow::Paper);
+    rounds.insert(EspRound { opponent: OpponentThrow::Paper, expected_result: RoundResult::Loss}, OurThrow::Rock);
+    rounds.insert(EspRound { opponent: OpponentThrow::Scissors, expected_result: RoundResult::Win}, OurThrow::Rock);
+    rounds.insert(EspRound { opponent: OpponentThrow::Scissors, expected_result: RoundResult::Draw}, OurThrow::Scissors);
+    rounds.insert(EspRound { opponent: OpponentThrow::Scissors, expected_result: RoundResult::Loss}, OurThrow::Paper);
     rounds
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct EspRound {
-    opponent: Throw,
+    opponent: OpponentThrow,
     expected_result: RoundResult,
 }
 
@@ -131,8 +131,8 @@ impl EspRound {
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct Round {
-    opponent: Throw,
-    us: Throw,
+    opponent: OpponentThrow,
+    us: OurThrow,
 }
 
 impl Round {
@@ -144,13 +144,13 @@ impl Round {
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
-enum Throw {
+enum OurThrow {
     Rock,
     Paper,
     Scissors,
 }
 
-impl Throw {
+impl OurThrow {
     fn score(&self) -> u32 {
         match self {
             Self::Rock => 1,
@@ -158,6 +158,13 @@ impl Throw {
             Self::Scissors => 3,
         }
     }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+enum OpponentThrow {
+    Rock,
+    Paper,
+    Scissors,
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
