@@ -1,4 +1,4 @@
-use std::{io, cmp};
+use std::{cmp, io};
 
 use nom::{
     branch::alt,
