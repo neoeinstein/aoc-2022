@@ -2,6 +2,7 @@ use std::{io, io::Read, str};
 
 use color_eyre::Result;
 
+const USE_BIT_SET: bool = true;
 const FORCE_SLOW_MODE: bool = false;
 
 fn main() -> Result<()> {
@@ -40,14 +41,29 @@ fn find_marker<const N: usize>(input: &str) -> (&str, usize) {
 }
 
 fn calculate_fill(window: &[u8]) -> (usize, usize) {
+    let mut set = 1u32 << (window.last().copied().unwrap_or_default() - b'a');
     let mut fill = 0;
     let mut cmp = 0;
     'outer: for (idx, val) in window[..window.len() - 1].iter().copied().enumerate().rev() {
-        for &test in &window[idx + 1..] {
+        if USE_BIT_SET {
+            // println!("{} at {}", val as char, idx);
+            let val = 1 << (val - b'a');
+            // println!("set: {:032b}", set);
+            // println!("val: {:032b}", val);
+            // println!("and: {:032b}", set & val);
             cmp += 1;
-            if val == test {
+            if val & set != 0 {
                 fill = if FORCE_SLOW_MODE { 1 } else { idx + 1 };
                 break 'outer;
+            }
+            set |= val;
+        } else {
+            for &test in &window[idx + 1..] {
+                cmp += 1;
+                if val == test {
+                    fill = if FORCE_SLOW_MODE { 1 } else { idx + 1 };
+                    break 'outer;
+                }
             }
         }
     }
