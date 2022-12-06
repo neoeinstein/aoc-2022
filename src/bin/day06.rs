@@ -20,6 +20,7 @@ fn main() -> Result<()> {
 
 fn find_marker<const N: usize>(input: &str) -> (&str, usize) {
     let bytes = input.as_bytes();
+    assert!(bytes.len() >= N);
     let mut window: [u8; N] = std::array::from_fn(|i| bytes[i]);
     let mut idx = N;
     let mut cmps = 0;
@@ -30,14 +31,16 @@ fn find_marker<const N: usize>(input: &str) -> (&str, usize) {
         if fill == 0 {
             break;
         }
+        assert!(fill < N);
+        assert!(bytes.len() >= idx + fill);
         window.copy_within(fill.., 0);
-        window[N - fill..].copy_from_slice(&bytes[idx..][..fill]);
+        window[N - fill..].copy_from_slice(&bytes[idx..(idx + fill)]);
         idx += fill;
     }
 
     println!("Comparisons: {}", cmps);
 
-    (&input[idx - N..][..N], idx)
+    (&input[idx - N..idx], idx)
 }
 
 fn calculate_fill(window: &[u8]) -> (usize, usize) {
