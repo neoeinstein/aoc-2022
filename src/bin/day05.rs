@@ -82,16 +82,18 @@ impl Ship {
         if mv.source == mv.destination {
             return;
         }
+
         let first = mv.source.min(mv.destination) - 1;
         let second = mv.source.max(mv.destination) - first - 1;
-        let (_rem, left) = self.0.split_at_mut(first);
+        let (_, left) = self.0.split_at_mut(first);
         let (left, right) = left.split_at_mut(second);
-        // println!("({}, {}, {})", rem.len(), left.len(), right.len());
+
         let (origin, dest) = if mv.source < mv.destination {
             (&mut left[0].0, &mut right[0].0)
         } else {
             (&mut right[0].0, &mut left[0].0)
         };
+
         dest.extend(origin.drain((origin.len() - mv.count)..));
     }
 
