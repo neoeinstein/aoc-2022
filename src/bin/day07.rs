@@ -258,12 +258,6 @@ fn parse_list_line(s: &str) -> IResult<&str, ListResponseLine> {
     )(s)
 }
 
-#[derive(Clone, Default, Debug, PartialEq, Eq)]
-struct DirectoryContents<'a> {
-    child_dirs: Vec<&'a str>,
-    child_files: Vec<(&'a str, usize)>,
-}
-
 fn parse_list_response(s: &str) -> IResult<&str, Vec<ListResponseLine>> {
     map(
         many_till(parse_list_line, peek(alt((tag("$"), eof)))),
