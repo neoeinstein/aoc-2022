@@ -33,6 +33,7 @@ struct Position {
     y: usize,
 }
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 enum View {
     North,
     East,
@@ -180,58 +181,37 @@ fn trees_seen_from_edge(forest: &Forest) -> usize {
         },
     ]);
 
-    for x in 1..forest.width - 1 {
-        // println!("SOUTH");
-        let tree = Position { x, y: 0 };
+    let mut check = |tree, view| {
+        // println!("{:?}", view);
         let initial_height = forest.get(tree).unwrap_or_default();
         // println!("tree at {:?} height {}", tree, initial_height as char);
         seen.insert(tree);
         seen.extend(
             forest
-                .view_from(View::South, tree, b'9')
+                .view_from(view, tree, b'9')
                 .filter(forest.taller_than_priors(initial_height)),
-        );
+        )
+    };
 
-        // println!("NORTH");
-        let tree = Position {
-            x,
-            y: forest.width - 1,
-        };
-        let initial_height = forest.get(tree).unwrap_or_default();
-        // println!("tree at {:?} height {}", tree, initial_height as char);
-        seen.insert(tree);
-        seen.extend(
-            forest
-                .view_from(View::North, tree, b'9')
-                .filter(forest.taller_than_priors(initial_height)),
+    for x in 1..forest.width - 1 {
+        check(Position { x, y: 0 }, View::South);
+        check(
+            Position {
+                x,
+                y: forest.width - 1,
+            },
+            View::North,
         );
     }
-    // dbg!(&seen);
 
     for y in 1..forest.width - 1 {
-        // println!("WEST");
-        let tree = Position { x: 0, y };
-        let initial_height = forest.get(tree).unwrap_or_default();
-        // println!("tree at {:?} height {}", tree, initial_height as char);
-        seen.insert(tree);
-        seen.extend(
-            forest
-                .view_from(View::West, tree, b'9')
-                .filter(forest.taller_than_priors(initial_height)),
-        );
-
-        // println!("EAST");
-        let tree = Position {
-            x: forest.width - 1,
-            y,
-        };
-        let initial_height = forest.get(tree).unwrap_or_default();
-        // println!("tree at {:?} height {}", tree, initial_height as char);
-        seen.insert(tree);
-        seen.extend(
-            forest
-                .view_from(View::East, tree, b'9')
-                .filter(forest.taller_than_priors(initial_height)),
+        check(Position { x: 0, y }, View::West);
+        check(
+            Position {
+                x: forest.width - 1,
+                y,
+            },
+            View::East,
         );
     }
 
