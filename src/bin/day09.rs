@@ -85,55 +85,46 @@ fn run(mut input: &str) -> Result<(usize, usize)> {
             snake2.advance(step.direction);
             snake10.advance(step.direction);
         }
-        println!("{:?}", snake10.components);
+        // println!("{:?}", snake10.segments);
     }
 
     Ok((snake2.tail_visits(), snake10.tail_visits()))
 }
 
 struct Snake<const N: usize> {
-    components: [(i32, i32); N],
+    segments: [(i32, i32); N],
     tail_positions: FxHashSet<(i32, i32)>,
 }
 
 impl<const N: usize> Snake<N> {
     fn new() -> Self {
         Self {
-            components: [(0, 0); N],
+            segments: [(0, 0); N],
             tail_positions: [(0, 0)].into_iter().collect(),
         }
     }
 
     fn advance(&mut self, direction: Direction) {
-        let prior_tail = self.tail_pos();
-        self.components[0] = direction.step(self.components[0]);
-        let mut last = self.components[0];
-        for p in &mut self.components[1..] {
-            if !is_adjacent(*p, last) {
-                fn catchup(h: i32, t: i32) -> i32 {
-                    match h.cmp(&t) {
-                        cmp::Ordering::Greater => 1,
-                        cmp::Ordering::Less => -1,
-                        cmp::Ordering::Equal => 0,
-                    }
-                }
-
-                p.0 += catchup(last.0, p.0);
-                p.1 += catchup(last.1, p.1);
-
-                last = *p;
+        let prior_tail = self.tail_position();
+        self.segments[0] = direction.step(self.segments[0]);
+        let mut prior = self.segments[0];
+        for seg in &mut self.segments[1..] {
+            if !is_adjacent(*seg, prior) {
+                seg.0 += catchup(prior.0, seg.0);
+                seg.1 += catchup(prior.1, seg.1);
+                prior = *seg;
             } else {
                 break;
             }
         }
 
-        if prior_tail != self.tail_pos() {
-            self.tail_positions.insert(self.tail_pos());
+        if prior_tail != self.tail_position() {
+            self.tail_positions.insert(self.tail_position());
         }
     }
 
-    fn tail_pos(&self) -> (i32, i32) {
-        self.components[N - 1]
+    fn tail_position(&self) -> (i32, i32) {
+        self.segments[N - 1]
     }
 
     fn tail_visits(&self) -> usize {
@@ -143,6 +134,14 @@ impl<const N: usize> Snake<N> {
 
 fn is_adjacent((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> bool {
     (x1 - 1..=x1 + 1).contains(&x2) && (y1 - 1..=y1 + 1).contains(&y2)
+}
+
+fn catchup(h: i32, t: i32) -> i32 {
+    match h.cmp(&t) {
+        cmp::Ordering::Greater => 1,
+        cmp::Ordering::Less => -1,
+        cmp::Ordering::Equal => 0,
+    }
 }
 
 #[cfg(test)]
