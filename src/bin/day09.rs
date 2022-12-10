@@ -1,4 +1,4 @@
-use std::{cmp, env, fs, io, io::Read};
+use std::{cmp, env, fmt, fs, io, io::Read};
 
 use color_eyre::Result;
 use fxhash::FxHashSet;
@@ -43,13 +43,13 @@ enum Direction {
     Right,
 }
 
-impl Direction {
-    fn step(self, (x, y): (i32, i32)) -> (i32, i32) {
-        match self {
-            Direction::Up => (x, y + 1),
-            Direction::Down => (x, y - 1),
-            Direction::Right => (x + 1, y),
-            Direction::Left => (x - 1, y),
+impl Position {
+    fn step(&mut self, direction: Direction) {
+        match direction {
+            Direction::Up => self.y += 1,
+            Direction::Down => self.y -= 1,
+            Direction::Right => self.x += 1,
+            Direction::Left => self.x -= 1,
         }
     }
 }
@@ -91,28 +91,64 @@ fn run(mut input: &str) -> Result<(usize, usize)> {
     Ok((snake2.tail_visits(), snake10.tail_visits()))
 }
 
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Position")
+            .field(&self.x)
+            .field(&self.y)
+            .finish()
+    }
+}
+
+impl Position {
+    const ORIGIN: Self = Self { x: 0, y: 0 };
+
+    fn is_adjacent(self, other: &Position) -> bool {
+        (self.x - 1..=self.x + 1).contains(&other.x) && (self.y - 1..=self.y + 1).contains(&other.y)
+    }
+
+    fn pull(self, tail: &mut Position) {
+        tail.x += Self::catchup(self.x, tail.x);
+        tail.y += Self::catchup(self.y, tail.y);
+    }
+
+    fn catchup(h: i32, t: i32) -> i32 {
+        match h.cmp(&t) {
+            cmp::Ordering::Greater => 1,
+            cmp::Ordering::Less => -1,
+            cmp::Ordering::Equal => 0,
+        }
+    }
+}
+
 struct Snake<const N: usize> {
-    segments: [(i32, i32); N],
-    tail_positions: FxHashSet<(i32, i32)>,
+    segments: [Position; N],
+    tail_positions: FxHashSet<Position>,
 }
 
 impl<const N: usize> Snake<N> {
     fn new() -> Self {
         Self {
-            segments: [(0, 0); N],
-            tail_positions: [(0, 0)].into_iter().collect(),
+            segments: [Position::ORIGIN; N],
+            tail_positions: [Position::ORIGIN].into_iter().collect(),
         }
     }
 
     fn advance(&mut self, direction: Direction) {
         let prior_tail = self.tail_position();
-        self.segments[0] = direction.step(self.segments[0]);
-        let mut prior = self.segments[0];
-        for seg in &mut self.segments[1..] {
-            if !is_adjacent(*seg, prior) {
-                seg.0 += catchup(prior.0, seg.0);
-                seg.1 += catchup(prior.1, seg.1);
-                prior = *seg;
+        self.segments[0].step(direction);
+
+        let mut head = self.segments[0];
+        for tail in &mut self.segments[1..] {
+            if !tail.is_adjacent(&head) {
+                head.pull(tail);
+                head = *tail;
             } else {
                 break;
             }
@@ -123,24 +159,12 @@ impl<const N: usize> Snake<N> {
         }
     }
 
-    fn tail_position(&self) -> (i32, i32) {
+    fn tail_position(&self) -> Position {
         self.segments[N - 1]
     }
 
     fn tail_visits(&self) -> usize {
         self.tail_positions.len()
-    }
-}
-
-fn is_adjacent((x1, y1): (i32, i32), (x2, y2): (i32, i32)) -> bool {
-    (x1 - 1..=x1 + 1).contains(&x2) && (y1 - 1..=y1 + 1).contains(&y2)
-}
-
-fn catchup(h: i32, t: i32) -> i32 {
-    match h.cmp(&t) {
-        cmp::Ordering::Greater => 1,
-        cmp::Ordering::Less => -1,
-        cmp::Ordering::Equal => 0,
     }
 }
 
