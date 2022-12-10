@@ -4,16 +4,16 @@ use std::{
     fs, io,
     io::Read,
     iter,
-    ops::{self, ControlFlow},
+    ops::{self, ControlFlow}, marker::PhantomData,
 };
 
-use color_eyre::Result;
+use color_eyre::{Result, eyre::Context};
 use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::{all_consuming, map, value},
     sequence::preceded,
-    Finish, IResult,
+    Finish, IResult, error::{VerboseError, convert_error},
 };
 
 fn main() -> Result<()> {
@@ -37,13 +37,19 @@ fn main() -> Result<()> {
 fn run(input: &str) -> Result<(i64, String)> {
     let mut computer = Computer::<6, 40>::default();
     let mut signal = 0;
-    let mut exec = computer.execute(
-        input
-            .lines()
-            .map(|l| OpCode::parse(l).expect("invalid instruction")),
-    );
+    let ops = input
+        .lines()
+        .enumerate()
+        .map(|(idx, l)| OpCode::parse(l).wrap_err_with(|| format!("invalid instruction {} at line {}", l, idx + 1)));
+    let mut exec = computer.execute(ops);
 
-    while let ControlFlow::Continue(_) = exec.tick() {
+    loop {
+        match exec.tick() {
+            ControlFlow::Continue(_) => {}
+            ControlFlow::Break(Ok(_)) => break,
+            ControlFlow::Break(Err(err)) => return Err(err),
+        }
+
         let cycle = exec.computer.clock.cycle.0 + 1;
         if (cycle + 20) % 40 == 0 {
             signal += cycle as i64 * exec.computer.cpu.registers.x;
@@ -61,29 +67,31 @@ struct Computer<const R: usize, const C: usize> {
 }
 
 impl<const R: usize, const C: usize> Computer<R, C> {
-    fn execute<I>(&mut self, ops: I) -> Execution<I::IntoIter, R, C>
+    fn execute<I, E>(&mut self, ops: I) -> Execution<I::IntoIter, E, R, C>
     where
-        I: IntoIterator<Item = OpCode>,
+        I: IntoIterator<Item = Result<OpCode, E>>,
     {
         let ops = ops.into_iter().fuse();
         Execution {
             computer: self,
             ops,
+            _phantom: PhantomData,
         }
     }
 }
 
 #[derive(Debug)]
-struct Execution<'a, I, const R: usize, const C: usize> {
+struct Execution<'a, I, E, const R: usize, const C: usize> {
     computer: &'a mut Computer<R, C>,
     ops: iter::Fuse<I>,
+    _phantom: PhantomData<*const E>,
 }
 
-impl<'a, I, const R: usize, const C: usize> Execution<'a, I, R, C>
+impl<'a, I, E, const R: usize, const C: usize> Execution<'a, I, E, R, C>
 where
-    I: Iterator<Item = OpCode>,
+    I: Iterator<Item = Result<OpCode, E>>,
 {
-    fn tick(&mut self) -> ControlFlow<()> {
+    fn tick(&mut self) -> ControlFlow<Result<(), E>> {
         self.computer.cpu.read_instruction(&mut self.ops)?;
         self.computer.clock.tick();
         self.computer.screen.tick(&self.computer.cpu.registers);
@@ -130,10 +138,14 @@ impl Default for Cpu {
 }
 
 impl Cpu {
-    fn read_instruction(&mut self, ops: &mut impl Iterator<Item = OpCode>) -> ControlFlow<()> {
+    fn read_instruction<E>(&mut self, ops: &mut impl Iterator<Item = Result<OpCode, E>>) -> ControlFlow<Result<(), E>> {
         if self.delay == Cycles::ZERO {
             let Some(op) = ops.next() else {
-                return ControlFlow::Break(());
+                return ControlFlow::Break(Ok(()));
+            };
+            let op = match op {
+                Ok(op) => op,
+                Err(err) => return ControlFlow::Break(Err(err)),
             };
 
             self.current_op = op;
@@ -267,14 +279,14 @@ impl OpCode {
         }
     }
 
-    fn parse(s: &str) -> Result<Self, nom::error::Error<String>> {
+    fn parse(s: &str) -> Result<Self> {
         all_consuming(Self::token)(s)
-            .map_err(|e| e.to_owned())
             .finish()
             .map(|o| o.1)
+            .map_err(|e| color_eyre::Report::msg(convert_error(s, e)))
     }
 
-    fn token(s: &str) -> IResult<&str, Self> {
+    fn token(s: &str) -> IResult<&str, Self, VerboseError<&str>> {
         alt((
             value(Self::Noop, tag("noop")),
             map(
