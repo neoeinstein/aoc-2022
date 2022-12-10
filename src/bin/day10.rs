@@ -4,16 +4,18 @@ use std::{
     fs, io,
     io::Read,
     iter,
-    ops::{self, ControlFlow}, marker::PhantomData,
+    marker::PhantomData,
+    ops::{self, ControlFlow},
 };
 
-use color_eyre::{Result, eyre::Context};
+use color_eyre::{eyre::Context, Result};
 use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::{all_consuming, map, value},
+    error::{convert_error, VerboseError},
     sequence::preceded,
-    Finish, IResult, error::{VerboseError, convert_error},
+    Finish, IResult,
 };
 
 fn main() -> Result<()> {
@@ -37,10 +39,9 @@ fn main() -> Result<()> {
 fn run(input: &str) -> Result<(i64, String)> {
     let mut computer = Computer::<6, 40>::default();
     let mut signal = 0;
-    let ops = input
-        .lines()
-        .enumerate()
-        .map(|(idx, l)| OpCode::parse(l).wrap_err_with(|| format!("invalid instruction {} at line {}", l, idx + 1)));
+    let ops = input.lines().enumerate().map(|(idx, l)| {
+        OpCode::parse(l).wrap_err_with(|| format!("invalid instruction {} at line {}", l, idx + 1))
+    });
     let mut exec = computer.execute(ops);
 
     loop {
@@ -138,7 +139,10 @@ impl Default for Cpu {
 }
 
 impl Cpu {
-    fn read_instruction<E>(&mut self, ops: &mut impl Iterator<Item = Result<OpCode, E>>) -> ControlFlow<Result<(), E>> {
+    fn read_instruction<E>(
+        &mut self,
+        ops: &mut impl Iterator<Item = Result<OpCode, E>>,
+    ) -> ControlFlow<Result<(), E>> {
         if self.delay == Cycles::ZERO {
             let Some(op) = ops.next() else {
                 return ControlFlow::Break(Ok(()));
@@ -169,7 +173,7 @@ impl Cpu {
 struct Crt<const R: usize, const C: usize> {
     column: usize,
     row: usize,
-    screen: [[bool; C]; R],
+    screen: [u64; R],
 }
 
 impl<const R: usize, const C: usize> Default for Crt<R, C> {
@@ -177,7 +181,7 @@ impl<const R: usize, const C: usize> Default for Crt<R, C> {
         Self {
             column: 0,
             row: 0,
-            screen: [[false; C]; R],
+            screen: [0; R],
         }
     }
 }
@@ -185,8 +189,8 @@ impl<const R: usize, const C: usize> Default for Crt<R, C> {
 impl<const R: usize, const C: usize> fmt::Display for Crt<R, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for row in &self.screen {
-            for &pixel in row {
-                f.write_char(if pixel { '#' } else { '.' })?;
+            for i in 0..C {
+                f.write_char(if (1 << i) & row != 0 { '#' } else { '.' })?;
             }
             f.write_char('\n')?;
         }
@@ -205,7 +209,7 @@ impl<const R: usize, const C: usize> Crt<R, C> {
     fn tick(&mut self, registers: &Registers) {
         // println!("Drawing at {}", self.column);
         if (registers.x - 1..=registers.x + 1).contains(&(self.column as i64)) {
-            self.screen[self.row][self.column] = true;
+            self.screen[self.row] |= 1 << self.column;
         }
         // for &pixel in &self.screen[self.row][..=self.column] {
         //     print!("{}", if pixel { '#' } else { '.' });
