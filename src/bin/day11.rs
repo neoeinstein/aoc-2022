@@ -83,7 +83,7 @@ enum Calming {
     Modular {
         modulus: i64,
         // multiplicative_mod_inverse: i64,
-    }
+    },
 }
 
 impl Default for Calming {
@@ -102,11 +102,11 @@ impl Calming {
             // multiplicative_mod_inverse %= modulus;
             // multiplicative_mod_inverse += modulus;
             // multiplicative_mod_inverse %= modulus;
-        Self::Modular {
-            modulus,
-            // multiplicative_mod_inverse,
+            Self::Modular {
+                modulus,
+                // multiplicative_mod_inverse,
+            }
         }
-    }
     }
 
     fn calm(&self, worry: &mut i64) {
