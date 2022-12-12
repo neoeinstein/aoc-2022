@@ -98,7 +98,7 @@ fn run(input: &str) -> Result<(usize, usize)> {
     let is_goal = |node_idx: NodeIndex| new_grid[node_idx].height == b'a';
     let estimate_cost = |node_idx: NodeIndex| {
         let cur = new_grid[node_idx];
-        (b'z' - cur.height) as usize
+        (cur.height - b'a') as usize
     };
     let (steps_to_flat, rev_path) =
         petgraph::algo::astar(&new_grid, end, is_goal, edge_cost, estimate_cost)
